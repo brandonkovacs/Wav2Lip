@@ -1,0 +1,17 @@
+name: wav2lip
+services:
+    wav2lip:
+        image: brandonkovacs/wav2lip
+        build:
+          context: .
+          dockerfile: Dockerfile        
+        volumes:
+            - ./workspace:/workspace
+            - ./checkpoints:/checkpoints
+        deploy:
+          resources:
+            reservations:
+              devices:
+                - driver: nvidia
+                  count: 1
+                  capabilities: [gpu]
