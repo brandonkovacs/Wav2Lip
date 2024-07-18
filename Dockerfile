@@ -40,3 +40,4 @@ RUN mkdir /workspace
 
 WORKDIR /app
 # python3 inference.py --checkpoint_path /checkpoints/wav2lip_gan.pth --face /workspace/video.mp4 --audio /workspace/audio.wav --outfile /workspace/output.mp4
+ENTRYPOINT [ "python3", "/app/inference.py" ]
