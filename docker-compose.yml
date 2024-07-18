@@ -4,10 +4,14 @@ services:
         image: brandonkovacs/wav2lip
         build:
           context: .
-          dockerfile: Dockerfile        
+          dockerfile: Dockerfile
+          shm_size: 8gb
+        ports:
+          - 8000:80
+        shm_size: 8gb
         volumes:
-            - ./workspace:/workspace
-            - ./checkpoints:/checkpoints
+          - ./workspace:/workspace
+        entrypoint: bash -c "fastapi run /app/api.py --port 80"
         deploy:
           resources:
             reservations:
