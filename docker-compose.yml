@@ -1,7 +1,8 @@
 name: wav2lip
 services:
     wav2lip:
-        image: brandonkovacs/wav2lip
+        image: brandonkovacs/wav2lip:latest
+        container_name: wav2lip
         build:
           context: .
           dockerfile: Dockerfile
