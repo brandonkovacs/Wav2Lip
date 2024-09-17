@@ -12,7 +12,6 @@ services:
         shm_size: 8gb
         volumes:
           - ./workspace:/workspace
-        entrypoint: bash -c "fastapi run /app/api.py --port 80"
         deploy:
           resources:
             reservations:

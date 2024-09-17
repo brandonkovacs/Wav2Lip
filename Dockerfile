@@ -3,7 +3,7 @@ FROM nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
 RUN export DEBIAN_FRONTEND=noninteractive RUNLEVEL=1 ; \
      apt-get update && apt-get install -y --no-install-recommends \
           build-essential cmake git curl ca-certificates \
-          vim \
+          vim wget \
           python3-pip python3-dev python3-wheel \
           libglib2.0-0 libxrender1 python3-soundfile \
           ffmpeg && \
@@ -36,16 +36,37 @@ RUN pip3 install opencv-contrib-python opencv-python python-ffmpeg mediapipe
 RUN mkdir -p /root/.cache/torch/hub/checkpoints
 RUN curl -SL -o /root/.cache/torch/hub/checkpoints/s3fd-619a316812.pth "https://www.adrianbulat.com/downloads/python-fan/s3fd-619a316812.pth"
 
-# Create working directory (to be mounted by docker)
-RUN mkdir /workspace
+# Download Wav2Lip models
+RUN wget 'https://huggingface.co/numz/wav2lip_studio/resolve/main/Wav2lip/wav2lip.pth?download=true' -O /app/checkpoints/wav2lip.pth
+RUN wget 'https://huggingface.co/numz/wav2lip_studio/resolve/main/Wav2lip/wav2lip_gan.pth?download=true' -O /app/checkpoints/wav2lip_gan.pth
+
+# Install Real-ESRGAN and dependencies
+RUN git clone --recursive https://github.com/xinntao/Real-ESRGAN.git /app/Real-ESRGAN
+WORKDIR /app/Real-ESRGAN
+RUN pip3 install git+https://github.com/XPixelGroup/BasicSR.git
+RUN pip3 install ffmpeg-python facexlib gfpgan gdown
+RUN pip3 install -r /app/Real-ESRGAN/requirements.txt
+RUN python3 /app/Real-ESRGAN/setup.py develop
+
+# Download Real-ESRGAN Weights
+RUN wget https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth -P /app/Real-ESRGAN/weights
+
+# Download GFPGAN Weights
+RUN mkdir -p /app/Real-ESRGAN/gfpgan/weights
+WORKDIR /app/Real-ESRGAN/gfpgan/weights
+RUN gdown 1gFTEVUql7YSXE_Uwf4EMONdAeL9N1kV2
+RUN gdown 19aRK_JLna8a0KeUwV7LubHN3XGLyIpdX
 
 WORKDIR /app
 
+# Run as webservice
+ENTRYPOINT ["fastapi", "run", "/app/api.py", "--port", "80"]
+
 # Docker CLI mode
-ENTRYPOINT [ "python3", "/app/inference.py" ]
+#ENTRYPOINT [ "python3", "/app/inference.py" ]
 
-# Webservice
-# ENTRYPOINT ["fastapi", "run", "/app/api.py", "--port", "80"]
-
-# Internal Container CLI:
+# Container CLI:
 # python3 inference.py --checkpoint_path /checkpoints/wav2lip_gan.pth --face /workspace/video.mp4 --audio /workspace/audio.wav --outfile /workspace/output.mp4
+
+# ESRGAN Upscale
+# python inference_realesrgan_video.py -i /workspace/video.mp4 -o /workspace/ -n RealESRGAN_x4plus --face_enhance -s 1.5
