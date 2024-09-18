@@ -30,7 +30,7 @@ description = """
 app = FastAPI(title="wav2lip web service",
     swagger_ui_parameters={"defaultModelsExpandDepth": -1})
 
-async def save_file(infile: UploadFile, save_dir="/tmp"):
+async def save_file(infile: UploadFile, save_dir=TMP_FOLDER):
     
     # Generate a uuid filename 
     saved_file_uuid = uuid.uuid4()
@@ -51,7 +51,7 @@ async def save_file(infile: UploadFile, save_dir="/tmp"):
     # Return path to the saved file
     return saved_file_path
 
-async def wav2lip(audio_path, video_path, checkpoint, save_dir="/tmp"):
+async def wav2lip(audio_path, video_path, checkpoint, save_dir=TMP_FOLDER):
 
     # Generate filename for wav2lip output
     outfile_filename = f"{checkpoint}.mp4"
@@ -80,6 +80,41 @@ async def wav2lip_inference_endpoint(video_file: UploadFile = File(),
 
     # Infer wav2lip and get output file
     outfile = await wav2lip(audio_path=audio_path, video_path=video_path, checkpoint=checkpoint, save_dir=project_dir)
+
+    # Return file
+    return FileResponse(path=outfile, media_type="application/octet-stream", filename=os.path.basename(outfile))
+
+async def esrgan_video(video_path, upscale_factor=2.0, enhance_face=True, save_dir=TMP_FOLDER):
+
+    infile_filename = pathlib.Path(video_path).stem
+    outfile_filename = f"{infile_filename}_out.mp4"
+    outfile_filepath = os.path.join(save_dir, outfile_filename)
+
+    # Run Real-ESRGAN inference command
+    command = f"python3 /app/Real-ESRGAN/inference_realesrgan_video.py -i {video_path} -o {save_dir} -n RealESRGAN_x4plus -s {upscale_factor}"
+    if enhance_face:
+        command += " --face_enhance"
+ 
+    results = subprocess.call(command, shell=True)
+        
+    # Return path to file
+    return outfile_filepath
+
+@app.post("/esrgan", description="Real-ESRGAN")
+async def wav2lip_inference_endpoint(video_file: UploadFile = File(),
+                           upscale_factor: str = Query("2.0", enum=["1", "1.5", "2", "2.5", "3.0", "3.5", "4.0"]),
+                           enhance_face: bool = Query(True, enum=[True, False])):
+    
+    # Create project folder to store video file
+    project_uuid = str(uuid.uuid4())
+    project_dir = os.path.join(WORKSPACE_FOLDER, project_uuid)
+    os.makedirs(project_dir)
+
+    # Upload video to server
+    video_path = await save_file(video_file, save_dir=project_dir)
+
+    # Infer REAL-ESRGAN
+    outfile = await esrgan_video(video_path=video_path, upscale_factor=upscale_factor, enhance_face=enhance_face, save_dir=project_dir)
 
     # Return file
     return FileResponse(path=outfile, media_type="application/octet-stream", filename=os.path.basename(outfile))

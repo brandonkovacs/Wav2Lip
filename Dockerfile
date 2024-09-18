@@ -49,13 +49,14 @@ RUN pip3 install -r /app/Real-ESRGAN/requirements.txt
 RUN python3 /app/Real-ESRGAN/setup.py develop
 
 # Download Real-ESRGAN Weights
-RUN wget https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth -P /app/Real-ESRGAN/weights
+RUN wget 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth' -O /app/Real-ESRGAN/weights/RealESRGAN_x4plus.pth
 
 # Download GFPGAN Weights
-RUN mkdir -p /app/Real-ESRGAN/gfpgan/weights
-WORKDIR /app/Real-ESRGAN/gfpgan/weights
-RUN gdown 1gFTEVUql7YSXE_Uwf4EMONdAeL9N1kV2
-RUN gdown 19aRK_JLna8a0KeUwV7LubHN3XGLyIpdX
+RUN mkdir -p /app/gfpgan/weights
+RUN mkdir -p /opt/conda/lib/python3.10/site-packages/gfpgan/weights
+RUN wget 'https://github.com/xinntao/facexlib/releases/download/v0.1.0/detection_Resnet50_Final.pth' -O /app/gfpgan/weights/detection_Resnet50_Final.pth
+RUN wget 'https://github.com/xinntao/facexlib/releases/download/v0.2.2/parsing_parsenet.pth' -O /app/gfpgan/weights/parsing_parsenet.pth
+RUN wget 'https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth' -O /opt/conda/lib/python3.10/site-packages/gfpgan/weights/GFPGANv1.3.pth
 
 WORKDIR /app
 
